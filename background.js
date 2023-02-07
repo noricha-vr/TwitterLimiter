@@ -5,6 +5,12 @@ const TWITTER_URL = "https://twitter.com/";
 const INITIAL_POPUP_URL = "https://www.google.com/";
 const INITIAL_DURATION = 3; // 3 分
 
+// Titter のページを何回開いたかカウントする
+let twitterCount = 0;
+// Twitter のページを開いた時間を記録する
+let twitterTimer = 0;
+// Twitter のページを開いている時間の間隔
+let interval
 
 chrome.storage.sync.get({
 	duration: INITIAL_DURATION,
@@ -15,10 +21,7 @@ chrome.storage.sync.get({
 	console.log(`duration: ${duration} sec. popupUrl: ${popupUrl}`);
 });
 
-// Titter のページを何回開いたかカウントする
-let twitterCount = 0;
-// Twitter のページを開いた時間を記録する
-let twitterTimer = 0;
+
 
 async function getUrl() {
 	let queryOptions = { active: true, currentWindow: true };
@@ -39,8 +42,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 	if (!url.startsWith(TWITTER_URL)) return;
 	twitterCount++;
 
+	if (interval) clearInterval(interval);
 
-	let interval = setInterval(async () => {
+	interval = setInterval(async () => {
 		let url = await getUrl();
 		console.log(`check url: ${url}`);
 		if (url.startsWith(TWITTER_URL)) {
