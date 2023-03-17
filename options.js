@@ -1,17 +1,22 @@
+const saveButton = document.getElementById("save");
+
 // Saves options to chrome.storage
 async function saveOptions() {
-	const duration = document.getElementById("duration").value;
-	const popupUrl = document.getElementById("popup_url").value;
-	const status = document.getElementById("status");
-
+	const twitterTimerLimit = document.getElementById("twitter-timer-limit").value;
+	const popupUrl = document.getElementById("popup-url").value;
 	chrome.storage.sync.set({
-		duration: duration,
+		twitterTimerLimit: twitterTimerLimit,
 		popupUrl: popupUrl,
 	});
 
-	status.classList.remove("hide");
-	await new Promise((resolve) => setTimeout(resolve, 5000));
-	status.classList.add("hide");
+	// saveButton をSaved!に変更して、Saved!のまま1秒後にSaveに戻す。
+	saveButton.textContent = "Saved!";
+	setTimeout(function () {
+		saveButton.textContent = "Save";
+		// メッセージをバックグラウンドスクリプトに送信
+		const message = { type: "settings_updated" };
+		chrome.runtime.sendMessage(message);
+	}, 1000);
 }
 
 // Restores select box and checkbox state using the preferences
@@ -19,15 +24,15 @@ async function saveOptions() {
 function restoreOptions() {
 	chrome.storage.sync.get(
 		{
-			duration: 3,
+			twitterTimerLimit: 3,
 			popupUrl: "https://www.google.com/",
 		},
 		function (items) {
-			document.getElementById("duration").value = items.duration;
-			document.getElementById("popup_url").value = items.popupUrl;
+			document.getElementById("twitter-timer-limit").value = items.twitterTimerLimit;
+			document.getElementById("popup-url").value = items.popupUrl;
 		}
 	);
 }
 
 document.addEventListener("DOMContentLoaded", restoreOptions);
-document.getElementById("save").addEventListener("click", saveOptions);
+saveButton.addEventListener("click", saveOptions);

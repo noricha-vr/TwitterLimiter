@@ -1,68 +1,75 @@
 // Twitter の URL
 const TWITTER_URL = "https://twitter.com/";
+const MINUTES = 10;
 
-// ポップアップ先の URL
-const INITIAL_POPUP_URL = "https://www.google.com/";
+// 初期値
+const INITIAL_POPUP_URL = "https://www.example.com/";
 const INITIAL_DURATION = 3; // 3 分
 
-// Titter のページを何回開いたかカウントする
-let twitterCount = 0;
 // Twitter のページを開いた時間を記録する
 let twitterTimer = 0;
+let popupUrl = INITIAL_POPUP_URL;
 // Twitter のページを開いている時間の間隔
+let twitterTimerLimit = INITIAL_DURATION * MINUTES; // 分を秒に変換
 let interval
 
-chrome.storage.sync.get({
-	duration: INITIAL_DURATION,
-	popupUrl: INITIAL_POPUP_URL
-}, function (items) {
-	duration = items.duration * 60;　// 分をミリ秒に変換
-	popupUrl = items.popupUrl
-	console.log(`duration: ${duration} sec. popupUrl: ${popupUrl}`);
+
+// 設定を同期する
+function syncSettings() {
+	chrome.storage.sync.get({
+		popupUrl: popupUrl,
+		twitterTimerLimit: twitterTimerLimit
+	}, function (items) {
+		twitterTimerLimit = items.twitterTimerLimit * MINUTES; // 分をミリ秒に変換
+		popupUrl = items.popupUrl
+		console.log(`Sync settings. twitterTimerLimit: ${twitterTimerLimit} sec. popupUrl: ${popupUrl}`);
+	});
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+	if (message.type === "settings_updated") {
+		syncSettings();
+	}
 });
 
 
-
-async function getUrl() {
-	let queryOptions = { active: true, currentWindow: true };
-	let tabs = await chrome.tabs.query(queryOptions);
-	if (tabs[0] === undefined) {
-		return "";
-	}
-	if (tabs[0].url) return tabs[0].url;
-	return "";
+// 現在のタブの URL を取得する
+async function getCurrentUrl() {
+	const queryOptions = { active: true, currentWindow: true };
+	const tabs = await chrome.tabs.query(queryOptions);
+	const url = tabs[0]?.url || '';
+	console.log(`Current url: ${url}`);
+	return url;
 }
 
-// 新しいページを開いたときに実行
+
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-	if (changeInfo.status !== "complete") return;
-	if (twitterCount > 0) return;
-	let url = await getUrl();
-	console.log(`start url: ${url}`);
-	if (!url.startsWith(TWITTER_URL)) return;
-	twitterCount++;
-
-	if (interval) clearInterval(interval);
-
+	if (changeInfo.status !== "complete" || twitterTimer > 0) {
+		return;
+	}
+	const url = await getCurrentUrl();
+	if (!url.startsWith(TWITTER_URL)) {
+		return;
+	}
+	syncSettings();
+	clearInterval(interval);
 	interval = setInterval(async () => {
-		let url = await getUrl();
-		console.log(`check url: ${url}`);
+		const url = await getCurrentUrl();
 		if (url.startsWith(TWITTER_URL)) {
 			console.log("You are on Twitter.");
-			twitterCount = 0;
-			if (twitterTimer < duration) {
+			if (twitterTimer < twitterTimerLimit) {
 				twitterTimer++;
 				console.log(`twitterTimer: ${twitterTimer}`);
 			} else {
-				// duration 秒後にタブを開く
+				// twitterTimerLimit 秒後にタブを開く
 				chrome.tabs.create({
 					url: popupUrl,
-					active: true
+					active: true,
 				});
 				twitterTimer = 0;
-				interval = clearInterval(interval);
+				console.log('Redirect to', popupUrl);
+				clearInterval(interval);
 			}
-
 		}
 	}, 1000);
-})	
+});
