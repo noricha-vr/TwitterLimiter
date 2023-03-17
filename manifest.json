@@ -14,9 +14,13 @@
 	"background": {
 		"service_worker": "background.js"
 	},
-	"options_ui": {
-		"page": "options.html",
-		"open_in_tab": false
+	"action": {
+		"default_popup": "options.html",
+		"default_icon": {
+			"16": "icon.png",
+			"48": "icon.png",
+			"128": "icon.png"
+		}
 	},
 	"web_accessible_resources": [
 		{

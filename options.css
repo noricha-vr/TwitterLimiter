@@ -1,0 +1,71 @@
+/* Set the font family and size for the whole page */
+body {
+	font-family: Arial, sans-serif;
+	font-size: 16px;
+	width: 200px;
+	height: 150px;
+}
+
+/* Center the container */
+.container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+/* Add some spacing between the form elements */
+.container>div {
+	margin: 10px 0;
+}
+
+/* Style the labels */
+label {
+	font-weight: bold;
+}
+
+/* Add some spacing between the input and the label */
+input {
+	margin-left: 10px;
+	padding: 8px;
+	border-width: 2px;
+	border-radius: 5px;
+	border-color: #ddd;
+}
+
+/* Style the button */
+.save-button {
+	background-color: #487cd5;
+	color: white;
+	padding: 10px 20px;
+	border: none;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	text-align: center;
+	transition: background-color 0.2s ease-in-out;
+	cursor: pointer;
+}
+
+/* Add hover effect to the button */
+.save-button:hover {
+	background-color: #3c6e8f;
+}
+
+/* Add active effect to the button */
+.save-button:active {
+	transform: scale(0.95);
+}
+
+
+/* Style the status message */
+.status {
+	font-weight: bold;
+	color: green;
+	text-align: center;
+}
+
+.hide {
+	visibility: hidden;
+}
