@@ -1,6 +1,6 @@
 // Twitter の URL
 const TWITTER_URL = "https://twitter.com/";
-const MINUTES = 10;
+const MINUTES = 60;
 
 // 初期値
 const INITIAL_POPUP_URL = "https://www.example.com/";
