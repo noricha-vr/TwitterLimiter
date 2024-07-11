@@ -22,5 +22,6 @@
     "host_permissions": [
         "https://twitter.com/*",
         "https://x.com/*"
-    ]
+    ],
+    "privacy_policy": "https://github.com/noricha-vr/TwitterLimiter/blob/main/privacy_policy.md"
 }
