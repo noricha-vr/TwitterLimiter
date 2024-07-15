@@ -66,24 +66,31 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
 
 // Twitter状態をチェックし、必要に応じてタイマーを開始または停止する関数
 async function checkTwitterStatus() {
+    console.log(`[${new Date().toISOString()}] Checking Twitter status. isWindowFocused: ${isWindowFocused}, activeTabId: ${activeTabId}`);
     if (!isWindowFocused || activeTabId === null) {
+        console.log(`[${new Date().toISOString()}] Window not focused or no active tab. Stopping timer.`);
         stopTimer();
         return;
     }
 
     const url = await getCurrentUrl(activeTabId);
     if (isTwitterUrl(url)) {
+        console.log(`[${new Date().toISOString()}] Twitter URL detected. Starting timer.`);
         startTimer();
     } else {
+        console.log(`[${new Date().toISOString()}] Non-Twitter URL detected. Stopping timer.`);
         stopTimer();
     }
 }
 
 // タイマーを開始する関数
 function startTimer() {
-    if (interval) return; // タイマーが既に動いている場合は何もしない
+    if (interval) {
+        console.log(`[${new Date().toISOString()}] Timer already running. Current count: ${twitterTimer}s`);
+        return;
+    }
 
-    console.log(`[${new Date().toISOString()}] Starting timer`);
+    console.log(`[${new Date().toISOString()}] Starting timer. Initial count: ${twitterTimer}s`);
     interval = setInterval(() => {
         twitterTimer++;
         console.log(`[${new Date().toISOString()}] Twitter timer: ${twitterTimer}s / ${twitterTimerLimit}s`);
@@ -108,11 +115,13 @@ function startTimer() {
 // タイマーを停止する関数
 function stopTimer() {
     if (interval) {
-        console.log(`[${new Date().toISOString()}] Stopping timer`);
+        console.log(`[${new Date().toISOString()}] Stopping timer. Final count: ${twitterTimer}s`);
         clearInterval(interval);
         interval = null;
+        twitterTimer = 0;
+    } else {
+        console.log(`[${new Date().toISOString()}] Timer not running. No action taken.`);
     }
-    twitterTimer = 0;
 }
 
 // chrome.tabs.onUpdated.addListener を修正
