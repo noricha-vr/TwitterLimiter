@@ -45,6 +45,75 @@ function isTwitterUrl(url) {
     return TWITTER_URLS.some(twitterUrl => url.startsWith(twitterUrl));
 }
 
+let activeTabId = null;
+let isWindowFocused = false;
+
+// アクティブなタブが変更されたときのリスナー
+chrome.tabs.onActivated.addListener((activeInfo) => {
+    activeTabId = activeInfo.tabId;
+    checkTwitterStatus();
+});
+
+// ウィンドウのフォーカスが変更されたときのリスナー
+chrome.windows.onFocusChanged.addListener((windowId) => {
+    if (windowId === chrome.windows.WINDOW_ID_NONE) {
+        isWindowFocused = false;
+    } else {
+        isWindowFocused = true;
+    }
+    checkTwitterStatus();
+});
+
+// Twitter状態をチェックし、必要に応じてタイマーを開始または停止する関数
+async function checkTwitterStatus() {
+    if (!isWindowFocused || activeTabId === null) {
+        stopTimer();
+        return;
+    }
+
+    const url = await getCurrentUrl(activeTabId);
+    if (isTwitterUrl(url)) {
+        startTimer();
+    } else {
+        stopTimer();
+    }
+}
+
+// タイマーを開始する関数
+function startTimer() {
+    if (interval) return; // タイマーが既に動いている場合は何もしない
+
+    console.log(`[${new Date().toISOString()}] Starting timer`);
+    interval = setInterval(() => {
+        twitterTimer++;
+        console.log(`[${new Date().toISOString()}] Twitter timer: ${twitterTimer}s / ${twitterTimerLimit}s`);
+
+        if (twitterTimer >= twitterTimerLimit) {
+            console.log(`[${new Date().toISOString()}] Time limit reached, redirecting`);
+            chrome.tabs.create({
+                url: popupUrl,
+                active: true,
+            }, (tab) => {
+                if (chrome.runtime.lastError) {
+                    console.error(`[${new Date().toISOString()}] Error creating new tab:`, chrome.runtime.lastError);
+                } else {
+                    console.log(`[${new Date().toISOString()}] New tab created with id: ${tab.id}`);
+                }
+            });
+            stopTimer();
+        }
+    }, 1000);
+}
+
+// タイマーを停止する関数
+function stopTimer() {
+    if (interval) {
+        console.log(`[${new Date().toISOString()}] Stopping timer`);
+        clearInterval(interval);
+        interval = null;
+    }
+    twitterTimer = 0;
+}
 
 // chrome.tabs.onUpdated.addListener を修正
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
@@ -55,59 +124,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         return;
     }
 
-    if (twitterTimer > 0) {
-        console.log(`[${new Date().toISOString()}] Twitter timer already running (${twitterTimer}s), returning`);
-        return;
+    if (tabId === activeTabId) {
+        checkTwitterStatus();
     }
-
-    const url = await getCurrentUrl(tabId);
-    console.log(`[${new Date().toISOString()}] Current URL: ${url}`);
-
-    if (!isTwitterUrl(url)) {
-        console.log(`[${new Date().toISOString()}] Not a Twitter/X URL, returning`);
-        return;
-    }
-
-    console.log(`[${new Date().toISOString()}] Twitter/X URL detected, syncing settings`);
-    syncSettings();
-
-    console.log(`[${new Date().toISOString()}] Clearing previous interval`);
-    clearInterval(interval);
-
-    console.log(`[${new Date().toISOString()}] Starting new interval`);
-    interval = setInterval(async () => {
-        const currentUrl = await getCurrentUrl(tabId);
-        console.log(`[${new Date().toISOString()}] Current URL in interval: ${currentUrl}`);
-
-        if (isTwitterUrl(currentUrl)) {
-            console.log(`[${new Date().toISOString()}] Still on Twitter/X`);
-
-            if (twitterTimer < twitterTimerLimit) {
-                twitterTimer++;
-                console.log(`[${new Date().toISOString()}] Twitter timer: ${twitterTimer}s / ${twitterTimerLimit}s`);
-            } else {
-                console.log(`[${new Date().toISOString()}] Time limit reached, redirecting`);
-                chrome.tabs.create({
-                    url: popupUrl,
-                    active: true,
-                }, (tab) => {
-                    if (chrome.runtime.lastError) {
-                        console.error(`[${new Date().toISOString()}] Error creating new tab:`, chrome.runtime.lastError);
-                    } else {
-                        console.log(`[${new Date().toISOString()}] New tab created with id: ${tab.id}`);
-                    }
-                });
-                twitterTimer = 0;
-                console.log(`[${new Date().toISOString()}] Redirected to ${popupUrl}, resetting timer`);
-                clearInterval(interval);
-                console.log(`[${new Date().toISOString()}] Interval cleared`);
-            }
-        } else {
-            console.log(`[${new Date().toISOString()}] Not on Twitter/X anymore, clearing interval`);
-            clearInterval(interval);
-            twitterTimer = 0;
-        }
-    }, 1000);
 });
 
 // 他の関数にもログを追加
